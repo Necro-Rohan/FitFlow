@@ -2,7 +2,7 @@
 
 ## Overview
 
-This diagram shows all major use cases for the FitFlow platform, organized by the two primary actors: **Gym Owner** and **Staff / Trainer**.
+This diagram shows all major use cases for the FitFlow platform, organized by the three primary actors: **Gym Owner** and **Staff / Trainer** and **Members**.
 The system focuses on **hybrid offline operations**, **membership management**, **billing integrity**, and **data safety**.
 
 ---
@@ -21,10 +21,13 @@ graph TB
         UC9["Restore Deleted Data"]
         UC10["Sync Offline Changes"]
         UC11["Manage Staff Roles"]
+        UC12["View Personal QR Code"]
+        UC13["View Membership Status"]
     end
 
     Owner((Gym Owner))
     Staff((Staff / Trainer))
+    Member((Member))
 
     %% Staff Actions
     Staff --> UC1
@@ -40,6 +43,11 @@ graph TB
     Owner --> UC8
     Owner --> UC9
     Owner --> UC11
+
+    %% Member Actions
+    Member --> UC1
+    Member --> UC12
+    Member --> UC13
 
     %% System driven
     UC4 -.->|if offline| UC10
@@ -64,3 +72,5 @@ graph TB
 | UC9 | Restore Deleted Data | Owner | Instantly recover accidentally deleted members or records via secure audit logs. |
 | UC10 | Sync Offline Changes | System | Automatically reconcile local offline data with the cloud once connectivity is restored. |
 | UC11 | Manage Staff Roles | Owner | Configure and assign roles and responsibilities for gym employees. |
+|UC12  |View Personal QR Code	|Member	|Access a unique, app-based QR code to facilitate high-speed check-ins at the front desk.|
+|UC13  |View Membership Status	|Member	|Independently track membership expiry dates, remaining class credits, and payment history.|
