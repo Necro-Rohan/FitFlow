@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ====== ENUMS ======
+
+enum Role {
+  OWNER
+  STAFF
+  TRAINER
+}
+
+enum MemberStatus {
+  ACTIVE
+  EXPIRED
+  PAUSED
+}
+
+enum MembershipType {
+  SUBSCRIPTION
+  CLASS_PACK
+  PT
+}
+
+enum PaymentMethod {
+  UPI
+  CASH
+  CARD
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+}
+
+enum LeadStatus {
+  NEW
+  FOLLOW_UP
+  CONVERTED
+  CLOSED
+}
+
+// ====== MODELS ======
+
+model User {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  username     String   @db.VarChar(100)
+  role         Role     @default(STAFF)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  managedMembers Member[]     @relation("ManagedBy")
+  trainedMembers Member[]     @relation("TrainerAssignment")
+  auditLogs      AuditLog[]
+  paymentsLog    Payment[]    @relation("PaymentStaff")
+  attendanceLog  Attendance[] @relation("AttendanceStaff")
+  reversedPayments Payment[]  @relation("PaymentReversedBy")
+  reversedAttendances Attendance[] @relation("AttendanceReversedBy")
+
+  @@map("users")
+}
+
+model Member {
+  id                String       @id @db.VarChar(36)
+  fullName          String       @map("full_name") @db.VarChar(200)
+  phone             String       @unique @db.VarChar(15)
+  qrCode            String       @unique @map("qr_code") @db.VarChar(100)
+  status            MemberStatus @default(ACTIVE)
+  managedById       String?      @map("managed_by_id") @db.VarChar(36)
+  assignedTrainerId String?      @map("assigned_trainer_id") @db.VarChar(36)
+  createdAt         DateTime     @default(now()) @map("created_at")
+  syncUpdatedAt     DateTime     @updatedAt @map("sync_updated_at")
+
+  // Relations
+  managedBy       User?        @relation("ManagedBy", fields: [managedById], references: [id])
+  assignedTrainer User?        @relation("TrainerAssignment", fields: [assignedTrainerId], references: [id])
+  memberships     Membership[]
+  payments        Payment[]
+  attendances     Attendance[]
+
+  @@index([qrCode])
+  @@index([status])
+  @@map("members")
+}
+
+model Membership {
+  id               String         @id @db.VarChar(36)
+  memberId         String         @map("member_id") @db.VarChar(36)
+  planName         String         @map("plan_name") @db.VarChar(100)
+  startDate        DateTime       @map("start_date") @db.Date
+  endDate          DateTime       @map("end_date") @db.Date
+  type             MembershipType
+  remainingClasses Int?           @map("remaining_classes")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId])
+  @@index([endDate])
+  @@map("memberships")
+}
+
+model Payment {
+  id              String        @id @db.VarChar(36)
+  memberId        String        @map("member_id") @db.VarChar(36)
+  staffId         String?       @map("staff_id") @db.VarChar(36)
+  amount          Decimal       @db.Decimal(10, 2)
+  method          PaymentMethod
+  syncStatus      SyncStatus    @default(PENDING) @map("sync_status")
+  invoiceNumber   String?       @map("invoice_number") @db.VarChar(50)
+  transactionDate DateTime      @default(now()) @map("transaction_date")
+  
+  isReversed      Boolean       @default(false) @map("is_reversed")
+  reversedAt      DateTime?     @map("reversed_at")
+  reversedById    String?       @map("reversed_by_id") @db.VarChar(36)
+  reversalReason  String?       @map("reversal_reason") @db.Text
+
+  // Relations
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  staff  User?  @relation("PaymentStaff", fields: [staffId], references: [id])
+  reversedBy User? @relation("PaymentReversedBy", fields: [reversedById], references: [id])
+
+  @@index([memberId])
+  @@index([staffId])
+  @@index([syncStatus])
+  @@map("payments")
+}
+
+model Attendance {
+  id         String     @id @db.VarChar(36)
+  memberId   String     @map("member_id") @db.VarChar(36)
+  staffId    String?    @map("staff_id") @db.VarChar(36)
+  checkIn    DateTime   @default(now()) @map("check_in")
+  syncStatus SyncStatus @default(PENDING) @map("sync_status")
+  
+  isReversed      Boolean       @default(false) @map("is_reversed")
+  reversedAt      DateTime?     @map("reversed_at")
+  reversedById    String?       @map("reversed_by_id") @db.VarChar(36)
+  reversalReason  String?       @map("reversal_reason") @db.Text
+
+  // Relations
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  staff  User?  @relation("AttendanceStaff", fields: [staffId], references: [id])
+  reversedBy User? @relation("AttendanceReversedBy", fields: [reversedById], references: [id])
+
+  @@index([memberId])
+  @@index([staffId])
+  @@index([syncStatus])
+  @@index([checkIn])
+  @@map("attendance")
+}
+
+model Lead {
+  id        String     @id @db.VarChar(36)
+  name      String     @db.VarChar(200)
+  phone     String     @db.VarChar(15)
+  status    LeadStatus @default(NEW)
+  notes     String?    @db.Text
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@index([status])
+  @@index([phone])
+  @@map("leads")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  action    String   @db.VarChar(100)
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
