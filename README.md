@@ -70,7 +70,7 @@ Don't let walk-ins walk away. Capture inquiries, categorize them by interest lev
 
 ### **Infrastructure**
 
-* **AWS (EC2, RDS, S3):** Production-grade hosting and secure image storage for member profiles.
+* **Render & Vercel:** For hosting.
 
 ---
 
@@ -87,3 +87,14 @@ Don't let walk-ins walk away. Capture inquiries, categorize them by interest lev
 
 FitFlow isn't just a CRUD app. It's a study in **System Reliability**. It's built for the gym owner who is tired of technical excuses and just wants their business to work—whenever, wherever.
 This project is a testament to the idea that **good system design isn't just about code; it's about understanding the real-world problems and building solutions that work in the messy, unpredictable environments of actual businesses.**
+
+---
+
+## **Deployed Link**
+view live:- https://fit-flow-ruddy.vercel.app/
+test admin credentials: 
+- email: owner@fitflow.com
+- password: admin123
+
+---
+
